@@ -1,0 +1,42 @@
+<rates>
+
+    <item>
+        <from>WMZ</from>
+        <to>WMR</to>
+        <in>1</in>
+        <out>30.593562</out>
+        <amount>572962.42</amount>
+    </item>
+
+    <item>
+        <from>OKUSD</from>
+        <to>PMUSD</to>
+        <in>1</in>
+        <out>0.978</out>
+        <amount>2921.42</amount>
+        <minfee>7 USD</minfee>
+        <param>manual</param>
+    </item>
+
+    <item>
+        <from>WMR</from>
+        <to>CARDRUB</to>
+        <in>1</in>
+        <out>0.980</out>
+        <amount>67341.10</amount>
+        <minfee>130 RUB</minfee>
+        <tofee>1 %</tofee>
+        <param>manual, juridical</param>
+    </item>
+
+    <item>
+        <from>PMUSD</from>
+        <to>CASHUSD</to>
+        <in>1</in>
+        <out>0.9705</out>
+        <amount>3901.90</amount>
+        <minfee>5 USD</minfee>
+        <city>MSK</city>
+    </item>
+
+</rates>
