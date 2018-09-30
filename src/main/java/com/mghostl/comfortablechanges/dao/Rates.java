@@ -18,7 +18,7 @@ class Rates {
     @XStreamAlias("items")
     private List<Item> items = new ArrayList<>();
 
-    Rates add(Item item) {
+    public Rates add(Item item) {
         items.add(item);
         return this;
     }
