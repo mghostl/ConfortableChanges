@@ -1,10 +1,9 @@
 package com.mghostl.comfortablechanges.db;
 
+import com.mghostl.comfortablechanges.dao.Exchange;
 import com.mghostl.comfortablechanges.dao.Rates;
 
-import java.util.Map;
-
 public interface RatesStorage {
-    void addRates(String exchange, Rates rates);
-    Map<String, Rates> getExchanges(String from, String to);
+    void addRates(Exchange exchange, Rates rates);
+    Rates[] getExchanges(String from, String to);
 }

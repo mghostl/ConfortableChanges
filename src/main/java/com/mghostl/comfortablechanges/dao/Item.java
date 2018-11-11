@@ -4,8 +4,6 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Set;
-
 @XStreamAlias("item")
 @RequiredArgsConstructor
 @Data
@@ -22,7 +20,9 @@ public class Item {
     private String minFee;
     @XStreamAlias("tofee")
     private String toFee;
+    @XStreamAlias("fromfee")
+    private String fromFee;
     private String city;
     private final double amount;
-    private Set<String> param;
+    private String param;
 }

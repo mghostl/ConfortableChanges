@@ -1,13 +1,16 @@
 package com.mghostl.comfortablechanges.dao;
 
+import com.mghostl.comfortablechanges.clients.ExchangesClient;
 import com.thoughtworks.xstream.XStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ResourceUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Optional;
 
@@ -16,14 +19,13 @@ public class RatesMarshaller {
     private static final Logger LOGGER = LoggerFactory.getLogger(RatesMarshaller.class);
     private final XStream xStream;
 
-    public RatesMarshaller() {
-        xStream = new XStream();
-        xStream.processAnnotations(Rates.class);
-        xStream.processAnnotations(Item.class);
-    }
+    private final ExchangesClient exchangesClient;
 
-    public String toXML(Rates rates) {
-        return xStream.toXML(rates);
+    @Autowired
+    public RatesMarshaller(ExchangesClient exchangesClient) {
+        xStream = new XStream();
+        xStream.processAnnotations(new Class[]{Rates.class, Exchange.class, Item.class});
+        this.exchangesClient = exchangesClient;
     }
 
     public Optional<Rates> fromXML(String file) {
@@ -35,12 +37,22 @@ public class RatesMarshaller {
         return Optional.empty();
     }
 
-    public Optional<Rates> fromXML(File file) {
-        return Optional.of((Rates) xStream.fromXML(file));
+    public Optional<Rates> fromXMLHTTPSURL(String urlStr) {
+        try {
+            URL url = new URL(urlStr);
+            return exchangesClient.getExchanges(url)
+                    .map(reader -> (Rates) xStream.fromXML(reader));
+        } catch (MalformedURLException e) {
+            LOGGER.error("Couldn't create url {}: {}", urlStr, e);
+        }
+        return Optional.empty();
     }
 
-    public Optional<Rates> fromXML(URL url) {
+    Optional<Rates> fromXML(URL url) {
         return Optional.of((Rates) xStream.fromXML(url));
     }
 
+    private Optional<Rates> fromXML(File file) {
+        return Optional.of((Rates) xStream.fromXML(file));
+    }
 }

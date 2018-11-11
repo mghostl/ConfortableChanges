@@ -1,12 +1,11 @@
 package com.mghostl.comfortablechanges.dao;
 
-import com.mghostl.comfortablechanges.dao.Item;
-import com.mghostl.comfortablechanges.dao.Parameter;
-import com.mghostl.comfortablechanges.dao.Rates;
-import com.mghostl.comfortablechanges.dao.RatesMarshaller;
+import com.mghostl.comfortablechanges.clients.ExchangesClient;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 import static junit.framework.TestCase.assertEquals;
@@ -17,9 +16,12 @@ public class RatesMarshallerTest {
     private final static String FILE_NAME = "rates-example.xml";
     private RatesMarshaller ratesMarshaller;
 
+    @Mock
+    private ExchangesClient exchangesClient;
+
     @Before
     public void init() {
-        ratesMarshaller = new RatesMarshaller();
+        ratesMarshaller = new RatesMarshaller(exchangesClient);
     }
 
     @Test
@@ -35,6 +37,12 @@ public class RatesMarshallerTest {
         assertEquals(1.0, item.getIn());
         assertEquals(30.593562, item.getOut());
         assertEquals(572962.42, item.getAmount());
-        assertEquals(new Parameter[]{Parameter.MANUAL, Parameter.JURIDICAL}, item.getParam().toArray());
+        Parameter[] resultParameters = Arrays.stream(item.getParam().split(", "))
+                .map(Parameter::of)
+                .toArray(Parameter[]::new);
+        Parameter[] expectedParameters = new Parameter[] {Parameter.MANUAL, Parameter.JURIDICAL};
+        for(int i = 0; i < resultParameters.length; i++) {
+            assertEquals(expectedParameters[i], resultParameters[i]);
+        }
     }
 }

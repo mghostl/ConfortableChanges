@@ -18,8 +18,19 @@ class Rates {
     @XStreamAlias("items")
     private List<Item> items = new ArrayList<>();
 
+    private Exchange exchange;
+
     public Rates add(Item item) {
         items.add(item);
+        return this;
+    }
+
+    public void addAllItems(Rates otherRates) {
+        otherRates.getItems().forEach(this::add);
+    }
+
+    public Rates copyExchange(Rates otherRates) {
+        this.setExchange(otherRates.getExchange());
         return this;
     }
 

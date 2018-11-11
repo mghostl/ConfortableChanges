@@ -39,4 +39,14 @@
         <city>MSK</city>
     </item>
 
+    <item>
+        <from>USD</from>
+        <to>EUR</to>
+        <in>1</in>
+        <out>1.34</out>
+        <amount>1000</amount>
+        <minfee>7 usd</minfee>
+        <city>MSK</city>
+    </item>
+
 </rates>

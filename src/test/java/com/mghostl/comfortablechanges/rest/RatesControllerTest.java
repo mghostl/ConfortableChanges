@@ -1,40 +1,36 @@
 package com.mghostl.comfortablechanges.rest;
 
-import com.jayway.jsonpath.JsonPath;
+import com.mghostl.comfortablechanges.AbstractTest;
+import com.mghostl.comfortablechanges.dao.Exchange;
 import com.mghostl.comfortablechanges.dao.Item;
 import com.mghostl.comfortablechanges.dao.Rates;
 import com.mghostl.comfortablechanges.db.RatesStorage;
-import net.minidev.json.JSONArray;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
 
-import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@RunWith(SpringRunner.class)
-@WebMvcTest(RatesController.class)
-public class RatesControllerTest {
+public class RatesControllerTest extends AbstractTest {
+
+    private static final double DELTA = 1e-10;
 
     @MockBean
     private RatesStorage ratesStorage;
 
-    @Autowired
-    private MockMvc mvc;
-
-    @Test
-    public void name() {
+    @Override
+    @Before
+    public void setUp() {
+        super.setUp();
     }
 
     @Test
@@ -44,11 +40,13 @@ public class RatesControllerTest {
         double in = 1;
         double out = 2;
         double amount = 1000;
-        String exchange = "TestExchange";
+        String exchangeName = "TestExchange";
+        String exchangeURL = "http://localhost";
         Rates rates = new Rates().add(new Item(from, to, in, out, amount));
-        Map<String, Rates> exchanges = new HashMap<>();
-        exchanges.put(exchange, rates);
-        given(ratesStorage.getExchanges(from, to)).willReturn(exchanges);
+        rates.setExchange(new Exchange(exchangeName, exchangeURL));
+        ArrayList<Rates> exchanges = new ArrayList<>();
+        exchanges.add(rates);
+        given(ratesStorage.getExchanges(from, to)).willReturn(exchanges.toArray(new Rates[]{}));
 
         mvc.perform(get("/rates")
                 .param("to", to)
@@ -57,19 +55,21 @@ public class RatesControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(result -> {
                     String resultStr = result.getResponse().getContentAsString();
-                    Map<String, Map<String, JSONArray>> root = JsonPath.parse(resultStr).json();
-                    assertTrue(root.containsKey(exchange));
-                    Map<String, JSONArray> items = root.get(exchange);
-                    assertEquals(1, items.size());
-                    JSONArray item = items.get("items");
-                    assertEquals(1, item.size());
-                    assertTrue(item.get(0) instanceof Map<?, ?>);
-                    Map details = (Map) item.get(0);
-                    assertEquals(from, details.get("from"));
-                    assertEquals(to, details.get("to"));
-                    assertEquals(in, details.get("in"));
-                    assertEquals(out, details.get("out"));
-                    assertEquals(amount, details.get("amount"));
+                    JSONArray root = new JSONArray(resultStr);
+                    assertEquals(1, root.length());
+                    JSONObject resultRates = root.getJSONObject(0);
+                    JSONObject exchange = resultRates.getJSONObject("exchange");
+                    assertNotNull(exchange);
+                    assertEquals(exchangeName, exchange.getString("name"));
+                    assertEquals(exchangeURL, exchange.getString("url"));
+                    JSONArray resultItems = resultRates.getJSONArray("items");
+                    assertEquals(1, resultItems.length());
+                    JSONObject resultItem = resultItems.getJSONObject(0);
+                    assertEquals(1000, resultItem.getInt("amount"));
+                    assertEquals(1, resultItem.getDouble("in"), DELTA);
+                    assertEquals("USD", resultItem.getString("from"));
+                    assertEquals("EUR", resultItem.get("to"));
+                    assertEquals(2, resultItem.getDouble("out"), DELTA);
                 });
     }
 }
