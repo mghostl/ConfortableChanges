@@ -44,7 +44,7 @@ public class ExchangesServiceImpl implements ExchangesService{
         logger.info("update Rates for exchanges: {}", exchanges);
         exchanges.forEach(exchange -> ratesMarshaller.fromXMLHTTPSURL(exchange.getUrl())
                 .ifPresent(rates -> {
-                    System.out.println(rates);
+                    logger.debug("Received rates: {}", rates);
                     ratesStorage.addRates(exchange, rates);
                 }));
     }
