@@ -13,11 +13,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class SimpleRatesStorage implements RatesStorage{
-    private final Logger LOGGER = LoggerFactory.getLogger(SimpleRatesStorage.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SimpleRatesStorage.class);
     private final Set<Rates> rates = ConcurrentHashMap.newKeySet();
 
     public void addRates(Exchange exchange, Rates rates) {
-        LOGGER.info("Updated rates for the exchange: {}", exchange);
+        LOGGER.debug("Updated rates for the exchange: {}", exchange);
         rates.setExchange(exchange);
         this.rates.add(rates);
     }
@@ -25,10 +25,10 @@ public class SimpleRatesStorage implements RatesStorage{
     @Cacheable("exchanges")
     public Rates[] getExchanges(String from, String to) {
         Rates[] result = rates.stream()
-                .filter(rates -> rates.getItems()
+                .filter(rate -> rate.getItems()
                                         .stream()
                                         .anyMatch(item -> isNeededItem(item, from, to)))
-                .map(rates -> filterRates(from, to, rates))
+                .map(rate -> filterRates(from, to, rate))
                 .toArray(Rates[]::new);
         LOGGER.debug("getExchanges({},{}) result: {}", from, to, result);
         return result;

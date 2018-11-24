@@ -1,6 +1,7 @@
 package com.mghostl.comfortablechanges.services;
 
 import com.mghostl.comfortablechanges.dao.Exchange;
+import com.mghostl.comfortablechanges.dao.Rates;
 import com.mghostl.comfortablechanges.dao.RatesMarshaller;
 import com.mghostl.comfortablechanges.db.RatesStorage;
 import org.slf4j.Logger;
@@ -10,7 +11,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
@@ -42,10 +45,15 @@ public class ExchangesServiceImpl implements ExchangesService{
     @Scheduled(fixedDelay = 1000)
     public void update() {
         logger.info("update Rates for exchanges: {}", exchanges);
-        exchanges.forEach(exchange -> ratesMarshaller.fromXMLHTTPSURL(exchange.getUrl())
+        exchanges.forEach(exchange -> getRates(exchange.getUrl())
+                .join()
                 .ifPresent(rates -> {
                     logger.debug("Received rates: {}", rates);
                     ratesStorage.addRates(exchange, rates);
                 }));
+    }
+
+    private CompletableFuture<Optional<Rates>> getRates(String url) {
+        return ratesMarshaller.fromXMLHTTPSURL(url);
     }
 }

@@ -5,6 +5,7 @@ import com.thoughtworks.xstream.XStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ResourceUtils;
 
@@ -13,6 +14,7 @@ import java.io.FileNotFoundException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @Component
 public class RatesMarshaller {
@@ -37,15 +39,16 @@ public class RatesMarshaller {
         return Optional.empty();
     }
 
-    public Optional<Rates> fromXMLHTTPSURL(String urlStr) {
+    @Async
+    public CompletableFuture<Optional<Rates>> fromXMLHTTPSURL(String urlStr) {
         try {
             URL url = new URL(urlStr);
-            return exchangesClient.getExchanges(url)
-                    .map(reader -> (Rates) xStream.fromXML(reader));
+            return CompletableFuture.completedFuture(exchangesClient.getExchanges(url)
+                    .map(reader -> (Rates) xStream.fromXML(reader)));
         } catch (MalformedURLException e) {
             LOGGER.error("Couldn't create url {}: {}", urlStr, e);
         }
-        return Optional.empty();
+        return CompletableFuture.completedFuture(Optional.empty());
     }
 
     Optional<Rates> fromXML(URL url) {
