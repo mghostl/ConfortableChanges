@@ -10,4 +10,5 @@ import lombok.RequiredArgsConstructor;
 public class Exchange {
     private final String name;
     private final String url;
+    private String ref;
 }

@@ -34,4 +34,11 @@ class Rates {
         return this;
     }
 
+    public void replaceAllItems(Rates otherRates) {
+        if(!otherRates.getExchange().equals(exchange)) {
+            return;
+        }
+        items = otherRates.getItems();
+    }
+
 }

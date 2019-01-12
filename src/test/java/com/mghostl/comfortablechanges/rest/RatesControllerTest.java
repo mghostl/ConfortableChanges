@@ -14,8 +14,7 @@ import org.springframework.http.MediaType;
 
 import java.util.ArrayList;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -42,8 +41,11 @@ public class RatesControllerTest extends AbstractTest {
         double amount = 1000;
         String exchangeName = "TestExchange";
         String exchangeURL = "http://localhost";
+        String ref = "GoHere";
         Rates rates = new Rates().add(new Item(from, to, in, out, amount));
-        rates.setExchange(new Exchange(exchangeName, exchangeURL));
+        Exchange expectedExchange = new Exchange(exchangeName, exchangeURL);
+        expectedExchange.setRef(ref);
+        rates.setExchange(expectedExchange);
         ArrayList<Rates> exchanges = new ArrayList<>();
         exchanges.add(rates);
         given(ratesStorage.getExchanges(from, to)).willReturn(exchanges.toArray(new Rates[]{}));
@@ -62,6 +64,7 @@ public class RatesControllerTest extends AbstractTest {
                     assertNotNull(exchange);
                     assertEquals(exchangeName, exchange.getString("name"));
                     assertEquals(exchangeURL, exchange.getString("url"));
+                    assertEquals(ref, exchange.getString("ref"));
                     JSONArray resultItems = resultRates.getJSONArray("items");
                     assertEquals(1, resultItems.length());
                     JSONObject resultItem = resultItems.getJSONObject(0);
@@ -72,4 +75,36 @@ public class RatesControllerTest extends AbstractTest {
                     assertEquals(2, resultItem.getDouble("out"), DELTA);
                 });
     }
+
+    @Test
+    public void shouldReturnFromCurrencies() throws Exception {
+        String[] currencies = new String [] { "USD", "EUR", "WMZ", "RUR"};
+        given(ratesStorage.getFrom()).willReturn(currencies);
+
+        mvc.perform(get("/from")
+        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(result -> {
+                   String resultStr = result.getResponse().getContentAsString();
+                   assertArrayEquals(currencies, mapFromJson(resultStr, String[].class));
+                });
+    }
+
+    @Test
+    public void shouldReturnToCurrencies() throws Exception {
+        String[] currencies = new String[] {"USD", "EUR", "WMZ", "RUR"};
+        String from = "BTC";
+
+        given(ratesStorage.getTo(from)).willReturn(currencies);
+
+        mvc.perform(get("/to")
+            .param("from", from)
+            .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(result -> {
+                    String resultStr = result.getResponse().getContentAsString();
+                    assertArrayEquals(currencies, (mapFromJson(resultStr, String[].class)));
+                });
+    }
+
 }

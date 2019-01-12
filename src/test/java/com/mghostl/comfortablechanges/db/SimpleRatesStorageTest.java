@@ -6,6 +6,7 @@ import com.mghostl.comfortablechanges.dao.Rates;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 public class SimpleRatesStorageTest {
@@ -35,5 +36,24 @@ public class SimpleRatesStorageTest {
         for(int i = 0; i < result.length; i++) {
             assertEquals(expectedResult[i], result[i]);
         }
+    }
+
+    @Test
+    public void shouldReturnCurrenciesFrom() {
+        String[] expectedCurrencies = new String[] { "USD", "USD2"};
+
+        String[] currenciesFrom = simpleRatesStorage.getFrom();
+
+        assertArrayEquals(expectedCurrencies, currenciesFrom);
+    }
+
+    @Test
+    public void shouldReturnCurrenciesTo() {
+        String[] expectedCurrencies = new String[] { "EUR"};
+        String from = "USD";
+
+        String[] currenciesTo = simpleRatesStorage.getTo(from);
+
+        assertArrayEquals(expectedCurrencies, currenciesTo);
     }
 }

@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Arrays;
+
 @CrossOrigin(origins = "http://localhost:4200", maxAge = 3600)
 @RestController
 public class RatesController {
@@ -33,4 +35,35 @@ public class RatesController {
         return ratesStorage.getExchanges(from, to);
     }
 
+    @GetMapping("/currencies")
+    public String[] currencies() {
+        logger.info("request for getCurrencies");
+        String[] result = ratesStorage.getCurrencies();
+        logger.debug("currencies: ");
+        logCurrencies(result);
+        return result;
+    }
+
+    @GetMapping("/from")
+    public String[] from() {
+        logger.info("request for getFrom");
+        String[] result = ratesStorage.getFrom();
+        logger.debug("from: ");
+        logCurrencies(result);
+        return result;
+    }
+
+    @GetMapping("/to")
+    public String[] to(@RequestParam(value = "from") String from) {
+        logger.info("request for getTo");
+        String[] result = ratesStorage.getTo(from);
+        logger.debug("to: ");
+        logCurrencies(result);
+        return result;
+    }
+
+
+    private void logCurrencies(String[] currencies) {
+        Arrays.stream(currencies).forEach(currency -> logger.debug(" {} ", currency));
+    }
 }

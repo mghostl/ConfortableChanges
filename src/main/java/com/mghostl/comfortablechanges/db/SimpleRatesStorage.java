@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -19,6 +21,11 @@ public class SimpleRatesStorage implements RatesStorage{
     public void addRates(Exchange exchange, Rates rates) {
         LOGGER.debug("Updated rates for the exchange: {}", exchange);
         rates.setExchange(exchange);
+        Optional<Rates> existsRates = getRatesForExchange(exchange.getName());
+        if(existsRates.isPresent()) {
+            existsRates.get().replaceAllItems(rates);
+            return;
+        }
         this.rates.add(rates);
     }
 
@@ -32,6 +39,45 @@ public class SimpleRatesStorage implements RatesStorage{
                 .toArray(Rates[]::new);
         LOGGER.debug("getExchanges({},{}) result: {}", from, to, result);
         return result;
+    }
+
+    @Override
+    public Optional<Rates> getRatesForExchange(String exchangeName) {
+        return rates.stream()
+                .filter(rate -> rate.getExchange().getName().equalsIgnoreCase(exchangeName))
+                .findFirst();
+    }
+
+    @Cacheable("currencies")
+    public String[] getCurrencies() {
+        Set<String> currencies = new HashSet<>();
+        rates.forEach(rate -> rate.getItems()
+                .forEach(item -> {
+                    currencies.add(item.getFrom().toUpperCase());
+                    currencies.add(item.getTo().toUpperCase());
+                }));
+        return currencies.toArray(new String[]{});
+    }
+
+    @Override
+    @Cacheable("from")
+    public String[] getFrom() {
+        Set<String> currencies = new HashSet<>();
+        rates.forEach(rate -> rate.getItems().forEach(item -> {
+            if(item.getFrom() != null && !item.getFrom().isEmpty()) {
+                currencies.add(item.getFrom());
+            }
+        }));
+        return currencies.toArray(new String[]{});
+    }
+
+    @Cacheable("to")
+    @Override
+    public String[] getTo(String from) {
+        Set<String> currencies = new HashSet<>();
+        rates.forEach(rate -> rate.getItems().stream().filter(item -> item.getFrom().equals(from))
+                        .forEach(item -> currencies.add(item.getTo())));
+        return currencies.toArray(new String[] {});
     }
 
     private Rates filterRates(String from, String to, Rates rates) {

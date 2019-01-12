@@ -11,8 +11,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -27,11 +28,12 @@ public class ExchangesServiceImpl implements ExchangesService{
 
     private final RatesStorage ratesStorage;
 
-    private Set<Exchange> exchanges = ConcurrentHashMap.newKeySet();
+    private Map<String, Exchange> exchanges = new ConcurrentHashMap<>();
 
     @PostConstruct
     private void init() {
-        exchangesServiceConfig.getExchanges().forEach((name, url) -> exchanges.add(new Exchange(name, url)));
+        exchangesServiceConfig.getSources().forEach((name, url) -> exchanges.put(name, new Exchange(name, url)));
+        exchangesServiceConfig.getUrl().forEach((name, url) -> exchanges.get(name).setRef(url));
     }
 
     @Autowired
@@ -45,15 +47,25 @@ public class ExchangesServiceImpl implements ExchangesService{
     @Scheduled(fixedDelay = 1000)
     public void update() {
         logger.info("update Rates for exchanges: {}", exchanges);
-        exchanges.forEach(exchange -> getRates(exchange.getUrl())
+        exchanges.values().forEach(exchange -> getRates(exchange.getUrl())
                 .join()
                 .ifPresent(rates -> {
                     logger.debug("Received rates: {}", rates);
+                    if(rates.getItems() == null) {
+                        rates.setItems(new ArrayList<>());
+                        logger.error("There is no any items for the exchange: {}", exchange.getName());
+                    }
                     ratesStorage.addRates(exchange, rates);
                 }));
     }
 
     private CompletableFuture<Optional<Rates>> getRates(String url) {
-        return ratesMarshaller.fromXMLHTTPSURL(url);
+       try {
+           return ratesMarshaller.fromXMLHTTPSURL(url);
+       }
+       catch (Exception e) {
+           logger.error("Couldn't get rates from exchange: {} due to: {}", url, e);
+           return CompletableFuture.completedFuture(Optional.empty());
+       }
     }
 }

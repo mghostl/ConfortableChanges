@@ -18,12 +18,15 @@ import java.util.concurrent.Executor;
 @PropertySource(value = "classpath:exchanges-service.properties")
 @ConfigurationProperties(prefix = "service")
 public class ExchangesServiceConfig {
-    private final Map<String, String> exchanges = new HashMap<>();
+    private final Map<String, String> sources = new HashMap<>();
+    private final Map<String, String> url = new HashMap<>();
     private int delayTimeMs;
 
-    public Map<String, String> getExchanges() {
-        return exchanges;
+    public Map<String, String> getSources() {
+        return sources;
     }
+
+    public Map<String, String> getUrl() {return url;}
 
     public int getDelayTimeMs() {
         return delayTimeMs;
