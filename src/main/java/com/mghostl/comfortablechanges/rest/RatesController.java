@@ -1,5 +1,6 @@
 package com.mghostl.comfortablechanges.rest;
 
+import com.mghostl.comfortablechanges.dao.Currency;
 import com.mghostl.comfortablechanges.dao.Rates;
 import com.mghostl.comfortablechanges.db.RatesStorage;
 import org.slf4j.Logger;
@@ -36,34 +37,36 @@ public class RatesController {
     }
 
     @GetMapping("/currencies")
-    public String[] currencies() {
+    public Currency[] currencies() {
         logger.info("request for getCurrencies");
-        String[] result = ratesStorage.getCurrencies();
+        Currency[] result = ratesStorage.getCurrencies();
         logger.debug("currencies: ");
         logCurrencies(result);
         return result;
     }
 
     @GetMapping("/from")
-    public String[] from() {
+    public Currency[] from() {
         logger.info("request for getFrom");
-        String[] result = ratesStorage.getFrom();
+        Currency[] result = ratesStorage.getFrom();
         logger.debug("from: ");
         logCurrencies(result);
         return result;
     }
 
     @GetMapping("/to")
-    public String[] to(@RequestParam(value = "from") String from) {
+    public Currency[] to(@RequestParam(value = "from") String from) {
         logger.info("request for getTo");
-        String[] result = ratesStorage.getTo(from);
+        Currency[] result = ratesStorage.getTo(from);
         logger.debug("to: ");
         logCurrencies(result);
         return result;
     }
 
 
-    private void logCurrencies(String[] currencies) {
-        Arrays.stream(currencies).forEach(currency -> logger.debug(" {} ", currency));
+    private void logCurrencies(Currency[] currencies) {
+        Arrays.stream(currencies)
+                .map(Currency::getName)
+                .forEach(currency -> logger.debug(" {} ", currency));
     }
 }

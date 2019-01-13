@@ -1,6 +1,7 @@
 package com.mghostl.comfortablechanges.rest;
 
 import com.mghostl.comfortablechanges.AbstractTest;
+import com.mghostl.comfortablechanges.dao.Currency;
 import com.mghostl.comfortablechanges.dao.Exchange;
 import com.mghostl.comfortablechanges.dao.Item;
 import com.mghostl.comfortablechanges.dao.Rates;
@@ -22,6 +23,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class RatesControllerTest extends AbstractTest {
 
     private static final double DELTA = 1e-10;
+    private final Currency[] currencies = new Currency[] { new Currency("USD", "USD_IMAGE"),
+            new Currency("EUR", "EUR_IMAGE"),
+            new Currency("WMZ", null),
+            new Currency("RUR", null)};
 
     @MockBean
     private RatesStorage ratesStorage;
@@ -78,7 +83,6 @@ public class RatesControllerTest extends AbstractTest {
 
     @Test
     public void shouldReturnFromCurrencies() throws Exception {
-        String[] currencies = new String [] { "USD", "EUR", "WMZ", "RUR"};
         given(ratesStorage.getFrom()).willReturn(currencies);
 
         mvc.perform(get("/from")
@@ -86,13 +90,13 @@ public class RatesControllerTest extends AbstractTest {
                 .andExpect(status().isOk())
                 .andExpect(result -> {
                    String resultStr = result.getResponse().getContentAsString();
-                   assertArrayEquals(currencies, mapFromJson(resultStr, String[].class));
+                   assertArrayEquals(currencies, mapFromJson(resultStr, Currency[].class));
                 });
     }
 
     @Test
     public void shouldReturnToCurrencies() throws Exception {
-        String[] currencies = new String[] {"USD", "EUR", "WMZ", "RUR"};
+
         String from = "BTC";
 
         given(ratesStorage.getTo(from)).willReturn(currencies);
@@ -103,7 +107,26 @@ public class RatesControllerTest extends AbstractTest {
                 .andExpect(status().isOk())
                 .andExpect(result -> {
                     String resultStr = result.getResponse().getContentAsString();
-                    assertArrayEquals(currencies, (mapFromJson(resultStr, String[].class)));
+                    assertArrayEquals(currencies, (mapFromJson(resultStr, Currency[].class)));
+                });
+    }
+
+    @Test
+    public void shouldReturnCurrenceis() throws Exception {
+        String USD = "USD";
+        String EUR = "EUR";
+        String USD_IMAGE = "USD Image";
+        String EUR_IMAGE = "EUR Image";
+        Currency[] currencies = new Currency[]{new Currency(USD, USD_IMAGE), new Currency(EUR, EUR_IMAGE)};
+
+        given(ratesStorage.getCurrencies()).willReturn(currencies);
+
+        mvc.perform(get("/currencies")
+        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(result -> {
+                    String resultStr = result.getResponse().getContentAsString();
+                    assertArrayEquals(currencies, mapFromJson(resultStr, Currency[].class));
                 });
     }
 

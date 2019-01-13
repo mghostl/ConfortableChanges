@@ -1,14 +1,19 @@
 package com.mghostl.comfortablechanges.db;
 
-import com.mghostl.comfortablechanges.dao.Exchange;
-import com.mghostl.comfortablechanges.dao.Item;
-import com.mghostl.comfortablechanges.dao.Rates;
+import com.mghostl.comfortablechanges.dao.*;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
+
+import java.util.Optional;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.when;
 
+@RunWith(MockitoJUnitRunner.class)
 public class SimpleRatesStorageTest {
 
     private SimpleRatesStorage simpleRatesStorage;
@@ -19,13 +24,20 @@ public class SimpleRatesStorageTest {
     private double amount = 100;
     private String exchangeName = "TestExchange";
     private String exchangeURL = "http://localhost";
+    private String USD_IMAGE = "USD_IMAGE_SOURCE";
+    private String EUR_IMAGE = "EUR_IMAGE_SOURCE";
+
+    @Mock
+    private ImagesHolder imagesHolder;
 
     @Before
     public void init() {
-        simpleRatesStorage = new SimpleRatesStorage();
+        simpleRatesStorage = new SimpleRatesStorage(imagesHolder);
         simpleRatesStorage.addRates(new Exchange(exchangeName, exchangeURL), new Rates().add(new Item(from, to, in, out, amount)));
         simpleRatesStorage.addRates(new Exchange(exchangeName + 2, exchangeURL),
                 new Rates().add(new Item(from + 2, to + 2, in * 2, out * 2, amount * 2)));
+        when(imagesHolder.getImage(from)).thenReturn(Optional.of(USD_IMAGE));
+        when(imagesHolder.getImage(to)).thenReturn(Optional.of(EUR_IMAGE));
     }
 
     @Test
@@ -40,20 +52,31 @@ public class SimpleRatesStorageTest {
 
     @Test
     public void shouldReturnCurrenciesFrom() {
-        String[] expectedCurrencies = new String[] { "USD", "USD2"};
+        Currency[] expectedCurrencies = new Currency[] { new Currency("USD2", null),
+                new Currency("USD", USD_IMAGE)};
 
-        String[] currenciesFrom = simpleRatesStorage.getFrom();
+        Currency[] currenciesFrom = simpleRatesStorage.getFrom();
 
         assertArrayEquals(expectedCurrencies, currenciesFrom);
     }
 
     @Test
     public void shouldReturnCurrenciesTo() {
-        String[] expectedCurrencies = new String[] { "EUR"};
-        String from = "USD";
+        Currency[] expectedCurrencies = new Currency[] { new Currency("EUR", EUR_IMAGE)};
 
-        String[] currenciesTo = simpleRatesStorage.getTo(from);
+        Currency[] currenciesTo = simpleRatesStorage.getTo(from);
 
         assertArrayEquals(expectedCurrencies, currenciesTo);
+    }
+
+    @Test
+    public void shouldReturnCurrencies() {
+       Currency[] expectedCurrencies = new Currency[]{
+               new Currency("EUR", EUR_IMAGE),
+               new Currency("EUR2", null),
+               new Currency("USD2", null),
+               new Currency("USD", USD_IMAGE)};
+       Currency[] currencies = simpleRatesStorage.getCurrencies();
+       assertArrayEquals(expectedCurrencies, currencies);
     }
 }

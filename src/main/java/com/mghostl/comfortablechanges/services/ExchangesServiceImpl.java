@@ -33,7 +33,13 @@ public class ExchangesServiceImpl implements ExchangesService{
     @PostConstruct
     private void init() {
         exchangesServiceConfig.getSources().forEach((name, url) -> exchanges.put(name, new Exchange(name, url)));
-        exchangesServiceConfig.getUrl().forEach((name, url) -> exchanges.get(name).setRef(url));
+        exchangesServiceConfig.getUrl().forEach((name, url) -> {
+            if(exchanges.containsKey(name)) {
+                exchanges.get(name).setRef(url);
+            } else {
+                logger.error("There is no url for exchange: {}", name);
+            }
+        });
     }
 
     @Autowired

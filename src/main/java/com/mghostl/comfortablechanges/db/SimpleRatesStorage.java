@@ -1,14 +1,14 @@
 package com.mghostl.comfortablechanges.db;
 
-import com.mghostl.comfortablechanges.dao.Exchange;
-import com.mghostl.comfortablechanges.dao.Item;
-import com.mghostl.comfortablechanges.dao.Rates;
+import com.mghostl.comfortablechanges.dao.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,11 +17,18 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SimpleRatesStorage implements RatesStorage{
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleRatesStorage.class);
     private final Set<Rates> rates = ConcurrentHashMap.newKeySet();
+    private Map<String, String> imagesByCurrencies = new ConcurrentHashMap<>();
+    private ImagesHolder imagesHolder;
+
+    @Autowired
+    public SimpleRatesStorage(ImagesHolder imagesHolder) {
+        this.imagesHolder = imagesHolder;
+    }
 
     public void addRates(Exchange exchange, Rates rates) {
         LOGGER.debug("Updated rates for the exchange: {}", exchange);
         rates.setExchange(exchange);
-        Optional<Rates> existsRates = getRatesForExchange(exchange.getName());
+            Optional<Rates> existsRates = getRatesForExchange(exchange.getName());
         if(existsRates.isPresent()) {
             existsRates.get().replaceAllItems(rates);
             return;
@@ -49,35 +56,40 @@ public class SimpleRatesStorage implements RatesStorage{
     }
 
     @Cacheable("currencies")
-    public String[] getCurrencies() {
-        Set<String> currencies = new HashSet<>();
+    public Currency[] getCurrencies() {
+        Set<Currency> currencies = new HashSet<>();
         rates.forEach(rate -> rate.getItems()
                 .forEach(item -> {
-                    currencies.add(item.getFrom().toUpperCase());
-                    currencies.add(item.getTo().toUpperCase());
+                    fillImages(item);
+                    addCurrency(currencies, item.getFrom().toUpperCase());
+                    addCurrency(currencies, item.getTo().toUpperCase());
                 }));
-        return currencies.toArray(new String[]{});
+        return currencies.toArray(new Currency[]{});
     }
 
     @Override
     @Cacheable("from")
-    public String[] getFrom() {
-        Set<String> currencies = new HashSet<>();
+    public Currency[] getFrom() {
+        Set<Currency> currencies = new HashSet<>();
         rates.forEach(rate -> rate.getItems().forEach(item -> {
+            fillImages(item);
             if(item.getFrom() != null && !item.getFrom().isEmpty()) {
-                currencies.add(item.getFrom());
+                addCurrency(currencies, item.getFrom());
             }
         }));
-        return currencies.toArray(new String[]{});
+        return currencies.toArray(new Currency[]{});
     }
 
     @Cacheable("to")
     @Override
-    public String[] getTo(String from) {
-        Set<String> currencies = new HashSet<>();
+    public Currency[] getTo(String from) {
+        Set<Currency> currencies = new HashSet<>();
         rates.forEach(rate -> rate.getItems().stream().filter(item -> item.getFrom().equals(from))
-                        .forEach(item -> currencies.add(item.getTo())));
-        return currencies.toArray(new String[] {});
+                        .forEach(item -> {
+                            fillImages(item);
+                            addCurrency(currencies, item.getTo());
+                        }));
+        return currencies.toArray(new Currency[] {});
     }
 
     private Rates filterRates(String from, String to, Rates rates) {
@@ -90,4 +102,23 @@ public class SimpleRatesStorage implements RatesStorage{
     private boolean isNeededItem(Item item, String from, String to) {
         return item.getFrom().equalsIgnoreCase(from) && item.getTo().equalsIgnoreCase(to);
     }
+
+    private void fillImages(Item item) {
+            if(!imagesByCurrencies.containsKey(item.getFrom())) {
+                addImage(item.getFrom());
+            }
+            if(!imagesByCurrencies.containsKey(item.getTo())) {
+                addImage(item.getTo());
+            }
+    }
+
+    private void addImage(String currency) {
+        imagesHolder.getImage(currency)
+                .ifPresent(source -> imagesByCurrencies.put(currency, source));
+    }
+
+    private void addCurrency(Set<Currency> currencies, String currency) {
+        currencies.add(new Currency(currency, imagesByCurrencies.get(currency)));
+    }
+
 }
